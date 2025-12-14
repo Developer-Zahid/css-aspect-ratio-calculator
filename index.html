@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Aspect Ratio Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Custom Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #60a5fa;
+            cursor: pointer;
+            margin-top: -6px; 
+            box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.3);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #374151;
+            border-radius: 2px;
+        }
+
+        .glass-panel {
+            background: rgba(31, 41, 55, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Preview box transition */
+        #previewBox {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                        height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans selection:bg-blue-500 selection:text-white pb-12">
+
+    <!-- Header -->
+    <header class="w-full bg-gray-800 border-b border-gray-700 p-4 mb-8">
+        <div class="max-w-2xl mx-auto flex items-center justify-between">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                <i class="fas fa-crop-simple text-blue-400"></i>
+                Aspect Ratio Calculator
+            </h1>
+            <span class="text-xs text-gray-400">Precision Tool</span>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto px-4">
+        
+        <!-- FIND RATIO SECTION -->
+        <div class="space-y-6">
+            <div class="glass-panel p-6 rounded-xl shadow-lg">
+                <h2 class="text-lg font-semibold mb-4 text-blue-300 flex items-center gap-2">
+                    <i class="fas fa-calculator"></i> Find Aspect Ratio
+                </h2>
+                <p class="text-sm text-gray-400 mb-6">Enter dimensions to find the simplest ratio (e.g., 1920 x 1080).</p>
+
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-gray-500 mb-1">Width (px)</label>
+                        <input type="number" id="inputW" value="624" class="w-full bg-gray-800 border border-gray-600 rounded p-3 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition" placeholder="W">
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-gray-500 mb-1">Height (px)</label>
+                        <input type="number" id="inputH" value="224" class="w-full bg-gray-800 border border-gray-600 rounded p-3 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition" placeholder="H">
+                    </div>
+                </div>
+
+                <!-- Results Area -->
+                <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div class="border-r border-gray-700">
+                            <span class="block text-gray-400 text-xs uppercase">Aspect Ratio</span>
+                            <span class="block text-2xl font-bold text-white mt-1" id="resultRatio">--:--</span>
+                        </div>
+                        <div>
+                            <span class="block text-gray-400 text-xs uppercase">CSS Decimal</span>
+                            <span class="block text-2xl font-bold text-blue-400 mt-1" id="resultDecimal">--</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-700 flex justify-between items-center">
+                        <span class="text-xs text-gray-500">Greatest Common Divisor (GCD)</span>
+                        <span class="text-sm font-mono bg-gray-900 px-2 py-1 rounded text-gray-300" id="resultGCD">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VISUAL PREVIEW -->
+            <div class="glass-panel p-6 rounded-xl shadow-lg flex flex-col items-center justify-center min-h-[250px] relative overflow-hidden">
+                <div class="absolute top-3 left-4 text-xs text-gray-500 font-mono">VISUAL PREVIEW</div>
+                
+                <!-- The changing box -->
+                <div id="previewContainer" class="w-full h-48 flex items-center justify-center">
+                    <div id="previewBox" class="bg-blue-500/20 border-2 border-blue-500 rounded flex items-center justify-center relative">
+                        <span class="text-blue-200 text-xs font-mono absolute -bottom-6 w-full text-center" id="previewLabel">Ratio</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- LOGIC: FIND RATIO ---
+        const inputW = document.getElementById('inputW');
+        const inputH = document.getElementById('inputH');
+        const resRatio = document.getElementById('resultRatio');
+        const resDec = document.getElementById('resultDecimal');
+        const resGCD = document.getElementById('resultGCD');
+        const previewBox = document.getElementById('previewBox');
+        const previewLabel = document.getElementById('previewLabel');
+
+        // Helper: Greatest Common Divisor
+        const gcd = (a, b) => {
+            return b === 0 ? a : gcd(b, a % b);
+        };
+
+        function calculateRatio() {
+            let w = parseFloat(inputW.value);
+            let h = parseFloat(inputH.value);
+
+            if (!w || !h || w <= 0 || h <= 0) {
+                resRatio.innerText = "--:--";
+                resDec.innerText = "--";
+                resGCD.innerText = "--";
+                return;
+            }
+
+            // Calculate GCD for Simplest Form
+            const divisor = gcd(Math.round(w), Math.round(h));
+            const simpleW = Math.round(w) / divisor;
+            const simpleH = Math.round(h) / divisor;
+
+            // Decimal calculation
+            const decimal = (w / h).toFixed(2);
+
+            // Update UI
+            resRatio.innerText = `${simpleW}:${simpleH}`;
+            // Added :1 to the decimal output
+            resDec.innerText = `${decimal} : 1`;
+            resGCD.innerText = divisor;
+
+            // Update Visual Preview
+            updatePreview(w, h);
+        }
+
+        function updatePreview(w, h) {
+            const container = document.getElementById('previewContainer');
+            const maxDim = 160; // Max pixels in preview box
+            
+            let boxW, boxH;
+
+            if (w >= h) {
+                boxW = maxDim;
+                boxH = maxDim * (h / w);
+            } else {
+                boxH = maxDim;
+                boxW = maxDim * (w / h);
+            }
+
+            previewBox.style.width = `${boxW}px`;
+            previewBox.style.height = `${boxH}px`;
+            previewLabel.innerText = `${w} x ${h}`;
+        }
+
+        inputW.addEventListener('input', calculateRatio);
+        inputH.addEventListener('input', calculateRatio);
+
+        // Init
+        calculateRatio();
+
+    </script>
+</body>
+</html>
